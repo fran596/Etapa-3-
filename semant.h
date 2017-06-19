@@ -34,13 +34,14 @@ private:
   void revisar_ciclos();
   void install_basic_classes();
   ostream& error_stream;
-
+  void error();
 public:
   ClassTable(Classes);
   int errors() { return semant_errors; }
   ostream& semant_error();
   ostream& semant_error(Class_ c);
   ostream& semant_error(Symbol filename, tree_node *t);
+  
 };
 
 

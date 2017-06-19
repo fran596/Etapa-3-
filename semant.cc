@@ -96,8 +96,8 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
     for (int i = classes->first(); classes->more(i); i = classes->next(i))
     {
        class__class* clase = (class__class *) classes->nth(i);
-       cout<< "Clase = " << clase->get_name() <<endl;
-       cout<< "Padre de clase = " << clase->get_parent() <<endl;
+       //cout<< "Clase = " << clase->get_name() <<endl;
+       //cout<< "Padre de clase = " << clase->get_parent() <<endl;
        /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
        clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
 
@@ -106,7 +106,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 	if(aux.compare(clase->get_parent()->get_string())== 0)
 	{
 		cerr<<"Error de compilacion. Clase "<<clase->get_name()<< " no puede heredar de si misma."<<endl;
-		exit(1);
+		error();
 	}
        
        /*Reviso que las clases no hereden de clases basicas*/
@@ -115,11 +115,17 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 	  std::string aux = *it;
 	  if(aux.compare(clase->get_parent()->get_string())== 0)
 	  {
-		cerr<<"Error de compilacion. Clase "<<clase->get_name()<< " hereda de la clase basica "<< aux <<"."<<endl;
-	   	exit(1);
+		semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class "<<clase->get_parent()<<endl;
+      		error();
 	  }
        }
-
+ 
+	if(clase->get_parent() == SELF_TYPE)
+	{
+	    semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class SELF_TYPE"<<endl;
+      	    error();
+	}		
+	
        
     }
     revisar_ciclos();
@@ -226,6 +232,7 @@ void ClassTable::install_basic_classes() {
 						      Str, 
 						      no_expr()))),
 	       filename);
+	       
 }
 
 void ClassTable::fill_List_tipos_basicos() 
@@ -346,4 +353,9 @@ void program_class::semant()
     }
 }
 
+void ClassTable::error()
+{
+  cerr<<"Compilation halted due to static semantic errors."<<endl;
+  exit(1);
+}
 
