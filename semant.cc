@@ -129,6 +129,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 	  }
        }
  
+	//no herede de self_type
 	if(clase->get_parent() == SELF_TYPE)
 	{
 	    semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class SELF_TYPE"<<endl;
@@ -137,6 +138,12 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 	
 	std::map<std::string,std::string>::iterator it_aux;
 	it_aux = clases_programa.find(clase->get_parent()->get_string());
+	
+	if(clases_programa.count(clase->get_name()->get_string())){
+		semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
+       		error();
+	}
+	//no herede de desconocidas
 	if(it_aux == clases_programa.end()){
 	    semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" inherits from an undefined class "<<clase->get_parent()<<endl;
       	    error();
