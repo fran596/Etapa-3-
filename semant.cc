@@ -94,12 +94,19 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
     for (int i = classes->first(); classes->more(i); i = classes->next(i))
     {
        class__class* clase = (class__class *) classes->nth(i);
-
-
+       //cout<< "Clase = " << clase->get_name() <<endl;
+       //cout<< "Padre de clase = " << clase->get_parent() <<endl;
        /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
-       clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
+	
+	//clase redefinida
+	if(clases_programa.find(clase->get_name()->get_string()) != clases_programa.end()){
+		semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
+       		error();	
+	}
+		
+	clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
+       	
     }
-
     clases_programa.insert(std::pair<std::string,std::string>("Object","Object"));
 
     for (int i = classes->first(); classes->more(i); i = classes->next(i))
@@ -136,10 +143,15 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
       	    error();
 	}	
 	
+	
+	//if(clases_programa.count(clase->get_name()->get_string())){
+	//	semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
+       	//	error();
+	//}
+
+	//no herede de desconocidas
 	std::map<std::string,std::string>::iterator it_aux;
 	it_aux = clases_programa.find(clase->get_parent()->get_string());
-	
-	//no herede de desconocidas
 	if(it_aux == clases_programa.end()){
 	    semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" inherits from an undefined class "<<clase->get_parent()<<endl;
       	    error();
@@ -148,9 +160,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
     }
     
     revisar_ciclos();
-    revisar_features(classes);
-    
-
+    revisar_features(classes);  
 }
 
 void ClassTable::install_basic_classes() {
