@@ -20,33 +20,33 @@ extern char *curr_filename;
 // as fixed names used by the runtime system.
 //
 //////////////////////////////////////////////////////////////////////
-static Symbol 
-    arg,
-    arg2,
-    Bool,
-    concat,
-    cool_abort,
-    copy,
-    Int,
-    in_int,
-    in_string,
-    IO,
-    length,
-    Main,
-    main_meth,
-    No_class,
-    No_type,
-    Object,
-    out_int,
-    out_string,
-    prim_slot,
-    self,
-    SELF_TYPE,
-    Str,
-    str_field,
-    substr,
-    type_name,
-    val;
+static Symbol
+arg,
+arg2,
+Bool,
+concat,
+cool_abort,
+copy,
+Int,
+in_int,
+in_string,
+IO,
+length,
+Main,
+main_meth,
+No_class,
+No_type,
+Object,
+out_int,
+out_string,
+prim_slot,
+self,
+SELF_TYPE,
+Str,
+str_field,
+substr,
+type_name,
+val;
 //
 // Initializing the predefined symbols.
 //
@@ -65,7 +65,7 @@ static void initialize_constants(void)
     length      = idtable.add_string("length");
     Main        = idtable.add_string("Main");
     main_meth   = idtable.add_string("main");
-    //   _no_class is a symbol that can't be the name of any 
+    //   _no_class is a symbol that can't be the name of any
     //   user-defined class.
     No_class    = idtable.add_string("_no_class");
     No_type     = idtable.add_string("_no_type");
@@ -84,101 +84,124 @@ static void initialize_constants(void)
 
 
 
-ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
+ClassTable::ClassTable(Classes classes) : semant_errors(0), error_stream(cerr)
+{
 
     /* Fill this in */
 
-    
+
     /*Lleno la lista de tipos basicos*/
     fill_List_tipos_basicos();
+
+    bool haymain=false;
     for (int i = classes->first(); classes->more(i); i = classes->next(i))
     {
-       class__class* clase = (class__class *) classes->nth(i);
-       //cout<< "Clase = " << clase->get_name() <<endl;
-       //cout<< "Padre de clase = " << clase->get_parent() <<endl;
-       /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
-	
-	//clase redefinida
-	if(clases_programa.find(clase->get_name()->get_string()) != clases_programa.end()){
-		semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
-       		error();	
-	}
-		
-	clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
-       	
+        class__class* clase = (class__class *) classes->nth(i);
+        //cout<< "Clase = " << clase->get_name() <<endl;
+        //cout<< "Padre de clase = " << clase->get_parent() <<endl;
+        /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
+
+
+        //clase Object redefinida
+        if(clase->get_name() == Object)
+        {
+            semant_error(clase->get_filename(), clase)<<"Redefinition of basic class "<<clase->get_name()<<endl;
+            error();
+        }
+
+        //clase redefinida
+        if(clases_programa.find(clase->get_name()->get_string()) != clases_programa.end())
+        {
+            semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
+            error();
+        }
+        if(clase->get_name() == Main)
+        {
+            haymain= true;
+        }
+
+        clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
+
     }
+    if (!haymain)
+    {
+        semant_error()<<"Class Main is not defined."<<endl;
+    }
+
     clases_programa.insert(std::pair<std::string,std::string>("Object","Object"));
 
     for (int i = classes->first(); classes->more(i); i = classes->next(i))
     {
-       class__class* clase = (class__class *) classes->nth(i);
-       //cout<< "Clase = " << clase->get_name() <<endl;
-       //cout<< "Padre de clase = " << clase->get_parent() <<endl;
-       /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
-      // clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
+        class__class* clase = (class__class *) classes->nth(i);
+        //cout<< "Clase = " << clase->get_name() <<endl;
+        //cout<< "Padre de clase = " << clase->get_parent() <<endl;
+        /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
+        // clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
 
-       /*Reviso que las clases no hereden de si mismas*/
-	std::string aux = clase->get_name()->get_string();
-	if(aux.compare(clase->get_parent()->get_string())== 0)
-	{
-		cerr<<"Error de compilacion. Clase "<<clase->get_name()<< " no puede heredar de si misma."<<endl;
-		error();
-	}
-       
-       /*Reviso que las clases no hereden de clases basicas*/
-       for (std::list<std::string>::iterator it = tipos_basicos.begin(); it != tipos_basicos.end(); ++it)
-       {
-	  std::string aux = *it;
-	  if(aux.compare(clase->get_parent()->get_string())== 0)
-	  {
-		semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class "<<clase->get_parent()<<endl;
-      		error();
-	  }
-       }
- 
-	//no herede de self_type
-	if(clase->get_parent() == SELF_TYPE)
-	{
-	    semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class SELF_TYPE"<<endl;
-      	    error();
-	}	
-	
-	
-	//if(clases_programa.count(clase->get_name()->get_string())){
-	//	semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
-       	//	error();
-	//}
+        /*Reviso que las clases no hereden de si mismas*/
+        std::string aux = clase->get_name()->get_string();
+        if(aux.compare(clase->get_parent()->get_string())== 0)
+        {
+            cerr<<"Error de compilacion. Clase "<<clase->get_name()<< " no puede heredar de si misma."<<endl;
+            error();
+        }
 
-	//no herede de desconocidas
-	std::map<std::string,std::string>::iterator it_aux;
-	it_aux = clases_programa.find(clase->get_parent()->get_string());
-	if(it_aux == clases_programa.end()){
-	    semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" inherits from an undefined class "<<clase->get_parent()<<endl;
-      	    error();
-   	 }
-       
+        /*Reviso que las clases no hereden de clases basicas*/
+        for (std::list<std::string>::iterator it = tipos_basicos.begin(); it != tipos_basicos.end(); ++it)
+        {
+            std::string aux = *it;
+            if(aux.compare(clase->get_parent()->get_string())== 0)
+            {
+                semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class "<<clase->get_parent()<<endl;
+                error();
+            }
+        }
+
+        //no herede de self_type
+        if(clase->get_parent() == SELF_TYPE)
+        {
+            semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class SELF_TYPE"<<endl;
+            error();
+        }
+
+
+        //if(clases_programa.count(clase->get_name()->get_string())){
+        //	semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
+        //	error();
+        //}
+
+        //no herede de desconocidas
+        std::map<std::string,std::string>::iterator it_aux;
+        it_aux = clases_programa.find(clase->get_parent()->get_string());
+        if(it_aux == clases_programa.end())
+        {
+            semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" inherits from an undefined class "<<clase->get_parent()<<endl;
+            error();
+        }
+
     }
-    
+
     revisar_ciclos();
-    revisar_features(classes);  
+    revisar_features(classes);
 }
 
-void ClassTable::install_basic_classes() {
+void ClassTable::install_basic_classes()
+{
 
     // The tree package uses these globals to annotate the classes built below.
-   // curr_lineno  = 0;
+    // curr_lineno  = 0;
     Symbol filename = stringtable.add_string("<basic class>");
-    
+
     // The following demonstrates how to create dummy parse trees to
     // refer to basic Cool classes.  There's no need for method
     // bodies -- these are already built into the runtime system.
-    
+
     // IMPORTANT: The results of the following expressions are
     // stored in local variables.  You will want to do something
     // with those variables at the end of this method to make this
     // code meaningful.
 
-    // 
+    //
     // The Object class has no parent class. Its methods are
     //        abort() : Object    aborts the program
     //        type_name() : Str   returns a string representation of class name
@@ -188,51 +211,51 @@ void ClassTable::install_basic_classes() {
     // are already built in to the runtime system.
 
     Class_ Object_class =
-	class_(Object, 
-	       No_class,
-	       append_Features(
-			       append_Features(
-					       single_Features(method(cool_abort, nil_Formals(), Object, no_expr())),
-					       single_Features(method(type_name, nil_Formals(), Str, no_expr()))),
-			       single_Features(method(copy, nil_Formals(), SELF_TYPE, no_expr()))),
-	       filename);
+        class_(Object,
+               No_class,
+               append_Features(
+                   append_Features(
+                       single_Features(method(cool_abort, nil_Formals(), Object, no_expr())),
+                       single_Features(method(type_name, nil_Formals(), Str, no_expr()))),
+                   single_Features(method(copy, nil_Formals(), SELF_TYPE, no_expr()))),
+               filename);
 
-    // 
+    //
     // The IO class inherits from Object. Its methods are
     //        out_string(Str) : SELF_TYPE       writes a string to the output
     //        out_int(Int) : SELF_TYPE            "    an int    "  "     "
     //        in_string() : Str                 reads a string from the input
     //        in_int() : Int                      "   an int     "  "     "
     //
-    Class_ IO_class = 
-	class_(IO, 
-	       Object,
-	       append_Features(
-			       append_Features(
-					       append_Features(
-							       single_Features(method(out_string, single_Formals(formal(arg, Str)),
-										      SELF_TYPE, no_expr())),
-							       single_Features(method(out_int, single_Formals(formal(arg, Int)),
-										      SELF_TYPE, no_expr()))),
-					       single_Features(method(in_string, nil_Formals(), Str, no_expr()))),
-			       single_Features(method(in_int, nil_Formals(), Int, no_expr()))),
-	       filename);  
+    Class_ IO_class =
+        class_(IO,
+               Object,
+               append_Features(
+                   append_Features(
+                       append_Features(
+                           single_Features(method(out_string, single_Formals(formal(arg, Str)),
+                                           SELF_TYPE, no_expr())),
+                           single_Features(method(out_int, single_Formals(formal(arg, Int)),
+                                           SELF_TYPE, no_expr()))),
+                       single_Features(method(in_string, nil_Formals(), Str, no_expr()))),
+                   single_Features(method(in_int, nil_Formals(), Int, no_expr()))),
+               filename);
 
     //
     // The Int class has no methods and only a single attribute, the
-    // "val" for the integer. 
+    // "val" for the integer.
     //
     Class_ Int_class =
-	class_(Int, 
-	       Object,
-	       single_Features(attr(val, prim_slot, no_expr())),
-	       filename);
+        class_(Int,
+               Object,
+               single_Features(attr(val, prim_slot, no_expr())),
+               filename);
 
     //
     // Bool also has only the "val" slot.
     //
     Class_ Bool_class =
-	class_(Bool, Object, single_Features(attr(val, prim_slot, no_expr())),filename);
+        class_(Bool, Object, single_Features(attr(val, prim_slot, no_expr())),filename);
 
     //
     // The class Str has a number of slots and operations:
@@ -241,107 +264,137 @@ void ClassTable::install_basic_classes() {
     //       length() : Int                       returns length of the string
     //       concat(arg: Str) : Str               performs string concatenation
     //       substr(arg: Int, arg2: Int): Str     substring selection
-    //       
+    //
     Class_ Str_class =
-	class_(Str, 
-	       Object,
-	       append_Features(
-			       append_Features(
-					       append_Features(
-							       append_Features(
-									       single_Features(attr(val, Int, no_expr())),
-									       single_Features(attr(str_field, prim_slot, no_expr()))),
-							       single_Features(method(length, nil_Formals(), Int, no_expr()))),
-					       single_Features(method(concat, 
-								      single_Formals(formal(arg, Str)),
-								      Str, 
-								      no_expr()))),
-			       single_Features(method(substr, 
-						      append_Formals(single_Formals(formal(arg, Int)), 
-								     single_Formals(formal(arg2, Int))),
-						      Str, 
-						      no_expr()))),
-	       filename);
-	       
+        class_(Str,
+               Object,
+               append_Features(
+                   append_Features(
+                       append_Features(
+                           append_Features(
+                               single_Features(attr(val, Int, no_expr())),
+                               single_Features(attr(str_field, prim_slot, no_expr()))),
+                           single_Features(method(length, nil_Formals(), Int, no_expr()))),
+                       single_Features(method(concat,
+                                       single_Formals(formal(arg, Str)),
+                                       Str,
+                                       no_expr()))),
+                   single_Features(method(substr,
+                                          append_Formals(single_Formals(formal(arg, Int)),
+                                                  single_Formals(formal(arg2, Int))),
+                                          Str,
+                                          no_expr()))),
+               filename);
+
 }
 
-void ClassTable::fill_List_tipos_basicos() 
+void ClassTable::fill_List_tipos_basicos()
 {
-	tipos_basicos.push_back("IO");
-	tipos_basicos.push_back("Int");
-	tipos_basicos.push_back("String");
-	tipos_basicos.push_back("Bool");
+    tipos_basicos.push_back("IO");
+    tipos_basicos.push_back("Int");
+    tipos_basicos.push_back("String");
+    tipos_basicos.push_back("Bool");
 }
 
 void ClassTable::revisar_ciclos()
 {
-	std::map<std::string,bool> iteradores_usados;
-	std::map<std::string,bool>::iterator it_iteradores_usados;
-	std::map<std::string,std::string>::iterator it_aux;
-	std::string padre = "";
-	std::string hijo = "";
-	for (std::map<std::string,std::string>::iterator it = clases_programa.begin(); it!=clases_programa.end(); ++it)
-	{
-		hijo = it->first;
-		padre = it->second;
-		while(true)
-		{
-			/*Si llego a raiz del arbol que es Object*/
-                        if(padre.compare("Object") == 0)
-			{
-				break;
-			}
-			it_aux = clases_programa.find(padre);
-			if(it_aux != clases_programa.end())
-			{
-				//Marco camino de padres
-				iteradores_usados.insert( std::pair<std::string,bool>(hijo,true));
-				it_iteradores_usados = iteradores_usados.find(padre);
-				if( it_iteradores_usados != iteradores_usados.end())
-				{
-					cerr<<"La clase "<<hijo<<" contiene una herencia ciclica"<<endl;
-					exit(1);
-				}
-			}
-			else 
-			{
-				cerr<<"La clase "<<hijo<<" hereda de una clase desconocida"<<endl;
-				exit(1);
-			}
-			hijo = padre;
-			it_aux = clases_programa.find(hijo);
-			padre = it_aux->second;
-		}
-		iteradores_usados.clear();
-		
-	}
+    std::map<std::string,bool> iteradores_usados;
+    std::map<std::string,bool>::iterator it_iteradores_usados;
+    std::map<std::string,std::string>::iterator it_aux;
+    std::string padre = "";
+    std::string hijo = "";
+    for (std::map<std::string,std::string>::iterator it = clases_programa.begin(); it!=clases_programa.end(); ++it)
+    {
+        hijo = it->first;
+        padre = it->second;
+        while(true)
+        {
+            /*Si llego a raiz del arbol que es Object*/
+            if(padre.compare("Object") == 0)
+            {
+                break;
+            }
+            it_aux = clases_programa.find(padre);
+            if(it_aux != clases_programa.end())
+            {
+                //Marco camino de padres
+                iteradores_usados.insert( std::pair<std::string,bool>(hijo,true));
+                it_iteradores_usados = iteradores_usados.find(padre);
+                if( it_iteradores_usados != iteradores_usados.end())
+                {
+                    cerr<<"La clase "<<hijo<<" contiene una herencia ciclica"<<endl;
+                    exit(1);
+                }
+            }
+            else
+            {
+                cerr<<"La clase "<<hijo<<" hereda de una clase desconocida"<<endl;
+                exit(1);
+            }
+            hijo = padre;
+            it_aux = clases_programa.find(hijo);
+            padre = it_aux->second;
+        }
+        iteradores_usados.clear();
+
+    }
 }
 
 void ClassTable::revisar_features(Classes classes)
 {
-	for(int i = classes->first(); classes->more(i); i = classes->next(i))
-	{
-		class__class* clase = (class__class *) classes->nth(i);
-		Features features = clase->get_features();
-		//cout<<"Features len = "<< features->len()<<endl;
-		for(int j=0; j < features->len(); j++ )
-		{
-		//	cout<<"Dentro de for de features"<<endl;
+    for(int i = classes->first(); classes->more(i); i = classes->next(i))
+    {
+        class__class* clase = (class__class *) classes->nth(i);
+        Features features = clase->get_features();
+        //cout<<"Features len = "<< features->len()<<endl;
+        for(int j=0; j < features->len(); j++ )
+        {
+
             Feature feat_aux = (Feature) features->nth(j);
-			/*Pregunto si es atributo o metodo*/
-			if(feat_aux->is_attr())
-			{
-				if(((attr_class *)feat_aux)->get_name() == self)
-				{
-		//	            cout<<"Atributo se llama self"<<endl;
-                                    semant_error(clase->get_filename(), ((attr_class *)feat_aux))<< "cannot use \'self\' as the name of an attribute.\n" <<endl;
-				}
-			}
-			else{
-		//		cout<<"Fui al else"<<endl;
-			}
-		}
-	}
+
+            /*Pregunto si es atributo o metodo*/
+            if(feat_aux->is_attr())
+            {
+                //cout<<"attr"<<endl;
+                //cout<<((attr_class *)feat_aux)->get_name() <<endl;
+                if(((attr_class *)feat_aux)->get_name() == self)
+                {
+                    //	            cout<<"Atributo se llama self"<<endl;
+                    semant_error(clase->get_filename(), ((attr_class *)feat_aux))<< "cannot use \'self\' as the name of an attribute.\n" <<endl;
+                }
+            }
+            else
+            {
+                //		cout<<"Fui al else"<<endl;
+                // cout<<"method"<<endl;
+                //	cout<<((method_class *)feat_aux)->get_name() <<endl;
+                method_class* m1 = (method_class *)feat_aux;
+                std::string method_1 = m1->get_return_type()->get_string();
+                bool is_return = false;
+                if(clases_programa.find(method_1) != clases_programa.end())
+                {
+                    is_return = true;
+                }
+                else
+                {
+                    for (std::list<std::string>::iterator it = tipos_basicos.begin(); it != tipos_basicos.end(); ++it)
+                    {
+                        std::string aux = *it;
+                        if(aux.compare(method_1) == 0)
+                        {
+                            is_return = true;
+                        }
+
+                    }
+
+                }
+                if(!is_return)
+                {
+                    semant_error(clase->get_filename(),m1)<<"Undefined return type "<<m1->get_return_type()<< "in "<< clase->get_name()<<endl;
+                }
+            }
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -349,20 +402,20 @@ void ClassTable::revisar_features(Classes classes)
 // semant_error is an overloaded function for reporting errors
 // during semantic analysis.  There are three versions:
 //
-//    ostream& ClassTable::semant_error()                
+//    ostream& ClassTable::semant_error()
 //
 //    ostream& ClassTable::semant_error(Class_ c)
 //       print line number and filename for `c'
 //
-//    ostream& ClassTable::semant_error(Symbol filename, tree_node *t)  
+//    ostream& ClassTable::semant_error(Symbol filename, tree_node *t)
 //       print a line number and filename
 //
 ///////////////////////////////////////////////////////////////////
 
 ostream& ClassTable::semant_error(Class_ c)
-{                                                             
+{
     return semant_error(c->get_filename(),c);
-}    
+}
 
 ostream& ClassTable::semant_error(Symbol filename, tree_node *t)
 {
@@ -370,11 +423,11 @@ ostream& ClassTable::semant_error(Symbol filename, tree_node *t)
     return semant_error();
 }
 
-ostream& ClassTable::semant_error()                  
-{                                                 
-    semant_errors++;                            
+ostream& ClassTable::semant_error()
+{
+    semant_errors++;
     return error_stream;
-} 
+}
 
 
 
@@ -401,14 +454,15 @@ void program_class::semant()
 
     /* some semantic analysis code may go here */
 
-    if (classtable->errors()) {
-	cerr << "Compilation halted due to static semantic errors." << endl;
-	exit(1);
+    if (classtable->errors())
+    {
+        cerr << "Compilation halted due to static semantic errors." << endl;
+        exit(1);
     }
 }
 
 void ClassTable::error()
 {
-  cerr<<"Compilation halted due to static semantic errors."<<endl;
-  exit(1);
+    cerr<<"Compilation halted due to static semantic errors."<<endl;
+    exit(1);
 }
