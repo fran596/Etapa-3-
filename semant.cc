@@ -1,5 +1,3 @@
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -89,6 +87,7 @@ static void initialize_constants(void)
 ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
 
     /* Fill this in */
+
     
     /*Lleno la lista de tipos basicos*/
     fill_List_tipos_basicos();
@@ -176,8 +175,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
     }
     
     revisar_ciclos();
-    
-
+    revisar_features(classes);  
 }
 
 void ClassTable::install_basic_classes() {
@@ -334,6 +332,33 @@ void ClassTable::revisar_ciclos()
 	}
 }
 
+void ClassTable::revisar_features(Classes classes)
+{
+	for(int i = classes->first(); classes->more(i); i = classes->next(i))
+	{
+		class__class* clase = (class__class *) classes->nth(i);
+		Features features = clase->get_features();
+		//cout<<"Features len = "<< features->len()<<endl;
+		for(int j=0; j < features->len(); j++ )
+		{
+		//	cout<<"Dentro de for de features"<<endl;
+            Feature feat_aux = (Feature) features->nth(j);
+			/*Pregunto si es atributo o metodo*/
+			if(feat_aux->is_attr())
+			{
+				if(((attr_class *)feat_aux)->get_name() == self)
+				{
+		//	            cout<<"Atributo se llama self"<<endl;
+                                    semant_error(clase->get_filename(), ((attr_class *)feat_aux))<< "cannot use \'self\' as the name of an attribute.\n" <<endl;
+				}
+			}
+			else{
+		//		cout<<"Fui al else"<<endl;
+			}
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////
 //
 // semant_error is an overloaded function for reporting errors
@@ -369,14 +394,11 @@ ostream& ClassTable::semant_error()
 
 
 /*   This is the entry point to the semantic checker.
-
      Your checker should do the following two things:
-
      1) Check that the program is semantically correct
      2) Decorate the abstract syntax tree with type information
         by setting the `type' field in each Expression node.
         (see `tree.h')
-
      You are free to first do 1), make sure you catch all semantic
      errors. Part 2) can be done in a second stage, when you want
      to build mycoolc.
@@ -405,4 +427,3 @@ void ClassTable::error()
   cerr<<"Compilation halted due to static semantic errors."<<endl;
   exit(1);
 }
-

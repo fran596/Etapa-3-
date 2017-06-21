@@ -32,6 +32,7 @@ private:
   std::map<std::string,std::string> clases_programa;
   void fill_List_tipos_basicos();
   void revisar_ciclos();
+  void revisar_features(Classes classes);
   void install_basic_classes();
   ostream& error_stream;
   void error();
