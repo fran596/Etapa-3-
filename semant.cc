@@ -1,5 +1,3 @@
-
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -89,24 +87,35 @@ static void initialize_constants(void)
 ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) {
 
     /* Fill this in */
+
     
     /*Lleno la lista de tipos basicos*/
     fill_List_tipos_basicos();
-    
     for (int i = classes->first(); classes->more(i); i = classes->next(i))
     {
        class__class* clase = (class__class *) classes->nth(i);
-       cout<< "Clase = " << clase->get_name() <<endl;
-       cout<< "Padre de clase = " << clase->get_parent() <<endl;
+
+
        /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
        clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
+    }
+
+    clases_programa.insert(std::pair<std::string,std::string>("Object","Object"));
+
+    for (int i = classes->first(); classes->more(i); i = classes->next(i))
+    {
+       class__class* clase = (class__class *) classes->nth(i);
+       //cout<< "Clase = " << clase->get_name() <<endl;
+       //cout<< "Padre de clase = " << clase->get_parent() <<endl;
+       /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
+      // clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
 
        /*Reviso que las clases no hereden de si mismas*/
 	std::string aux = clase->get_name()->get_string();
 	if(aux.compare(clase->get_parent()->get_string())== 0)
 	{
 		cerr<<"Error de compilacion. Clase "<<clase->get_name()<< " no puede heredar de si misma."<<endl;
-		exit(1);
+		error();
 	}
        
        /*Reviso que las clases no hereden de clases basicas*/
@@ -115,15 +124,32 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
 	  std::string aux = *it;
 	  if(aux.compare(clase->get_parent()->get_string())== 0)
 	  {
-		cerr<<"Error de compilacion. Clase "<<clase->get_name()<< " hereda de la clase basica "<< aux <<"."<<endl;
-	   	exit(1);
+		semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class "<<clase->get_parent()<<endl;
+      		error();
 	  }
        }
-
+ 
+	//no herede de self_type
+	if(clase->get_parent() == SELF_TYPE)
+	{
+	    semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" cannot inherit class SELF_TYPE"<<endl;
+      	    error();
+	}	
+	
+	std::map<std::string,std::string>::iterator it_aux;
+	it_aux = clases_programa.find(clase->get_parent()->get_string());
+	
+	//no herede de desconocidas
+	if(it_aux == clases_programa.end()){
+	    semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" inherits from an undefined class "<<clase->get_parent()<<endl;
+      	    error();
+   	 }
        
     }
+    
     revisar_ciclos();
-
+    revisar_features(classes);
+    
 
 }
 
@@ -226,6 +252,7 @@ void ClassTable::install_basic_classes() {
 						      Str, 
 						      no_expr()))),
 	       filename);
+	       
 }
 
 void ClassTable::fill_List_tipos_basicos() 
@@ -280,6 +307,33 @@ void ClassTable::revisar_ciclos()
 	}
 }
 
+void ClassTable::revisar_features(Classes classes)
+{
+	for(int i = classes->first(); classes->more(i); i = classes->next(i))
+	{
+		class__class* clase = (class__class *) classes->nth(i);
+		Features features = clase->get_features();
+		//cout<<"Features len = "<< features->len()<<endl;
+		for(int j=0; j < features->len(); j++ )
+		{
+		//	cout<<"Dentro de for de features"<<endl;
+            Feature feat_aux = (Feature) features->nth(j);
+			/*Pregunto si es atributo o metodo*/
+			if(feat_aux->is_attr())
+			{
+				if(((attr_class *)feat_aux)->get_name() == self)
+				{
+		//	            cout<<"Atributo se llama self"<<endl;
+                                    semant_error(clase->get_filename(), ((attr_class *)feat_aux))<< "cannot use \'self\' as the name of an attribute.\n" <<endl;
+				}
+			}
+			else{
+		//		cout<<"Fui al else"<<endl;
+			}
+		}
+	}
+}
+
 ////////////////////////////////////////////////////////////////////
 //
 // semant_error is an overloaded function for reporting errors
@@ -315,14 +369,11 @@ ostream& ClassTable::semant_error()
 
 
 /*   This is the entry point to the semantic checker.
-
      Your checker should do the following two things:
-
      1) Check that the program is semantically correct
      2) Decorate the abstract syntax tree with type information
         by setting the `type' field in each Expression node.
         (see `tree.h')
-
      You are free to first do 1), make sure you catch all semantic
      errors. Part 2) can be done in a second stage, when you want
      to build mycoolc.
@@ -346,4 +397,8 @@ void program_class::semant()
     }
 }
 
-
+void ClassTable::error()
+{
+  cerr<<"Compilation halted due to static semantic errors."<<endl;
+  exit(1);
+}
