@@ -91,6 +91,8 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
     
     /*Lleno la lista de tipos basicos*/
     fill_List_tipos_basicos();
+
+    bool haymain=false;	
     for (int i = classes->first(); classes->more(i); i = classes->next(i))
     {
        class__class* clase = (class__class *) classes->nth(i);
@@ -98,15 +100,28 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0) , error_stream(cerr) 
        //cout<< "Padre de clase = " << clase->get_parent() <<endl;
        /*Lleno el mapa con el par Hijo-Padre para tener el nombre de todas las clases que existen en el programa*/
 	
+
+	//clase Object redefinida
+	if(clase->get_name() == Object){
+		semant_error(clase->get_filename(), clase)<<"Redefinition of basic class "<<clase->get_name()<<endl;
+       		error();	
+	}
+
 	//clase redefinida
 	if(clases_programa.find(clase->get_name()->get_string()) != clases_programa.end()){
 		semant_error(clase->get_filename(), clase)<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
        		error();	
 	}
-		
+	if(clase->get_name() == Main){
+	haymain= true;}
+			
 	clases_programa.insert(std::pair<std::string,std::string>(clase->get_name()->get_string(),clase->get_parent()->get_string()));
        	
     }
+    if (!haymain){
+    semant_error()<<"Class Main is not defined."<<endl;
+	}
+
     clases_programa.insert(std::pair<std::string,std::string>("Object","Object"));
 
     for (int i = classes->first(); classes->more(i); i = classes->next(i))
