@@ -231,6 +231,7 @@ public:
    void dump(ostream& stream, int n);
    Symbol get_name() { return name; };
    Symbol get_type_decl() { return type_decl; };
+   Expression get_init() { return init; };
    Expression get_expression() { return init; };
 
    void semantic();
