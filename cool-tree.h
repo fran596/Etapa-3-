@@ -11,6 +11,8 @@
 
 #include "tree.h"
 #include "cool-tree.handcode.h"
+#include <string>
+#include <map>
 
 
 // define the class for phylum
@@ -35,7 +37,6 @@ class Class__class : public tree_node {
 public:
    tree_node *copy()		 { return copy_Class_(); }
    virtual Class_ copy_Class_() = 0;
-
 #ifdef Class__EXTRAS
    Class__EXTRAS
 #endif
@@ -82,6 +83,7 @@ class Expression_class : public tree_node {
 public:
    tree_node *copy()		 { return copy_Expression(); }
    virtual Expression copy_Expression() = 0;
+   void semantic();
 
 #ifdef Expression_EXTRAS
    Expression_EXTRAS
@@ -169,7 +171,8 @@ public:
    Symbol get_parent() { return parent; };
    Features get_features() { return features; };     
    void dump(ostream& stream, int n);
-
+   /*Variables que contiene la clase*/
+   std::map<Symbol,Symbol> variables_clase;
    void semantic();
 
 #ifdef Class__SHARED_EXTRAS
@@ -203,7 +206,7 @@ public:
    Formals get_formals() { return formals; };
    Expression get_expression() { return expr; };
    
-   void semantic();
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Feature_SHARED_EXTRAS
    Feature_SHARED_EXTRAS
@@ -234,7 +237,7 @@ public:
    Expression get_init() { return init; };
    Expression get_expression() { return init; };
 
-   void semantic();
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Feature_SHARED_EXTRAS
    Feature_SHARED_EXTRAS
@@ -257,8 +260,9 @@ public:
    }
    Formal copy_Formal();
    void dump(ostream& stream, int n);
-   
-   void semantic();
+   Symbol get_name() { return name; }
+   Symbol get_type() { return type_decl; }
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Formal_SHARED_EXTRAS
    Formal_SHARED_EXTRAS
@@ -307,8 +311,9 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
-
-   void semantic();
+   Symbol get_name() { return name; }
+   Expression get_expression() {return expr; }
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -457,8 +462,8 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
-
-   void semantic();
+   Expressions get_body() { return body; }
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -849,8 +854,8 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
-
-   void semantic();
+   Symbol get_name() { return name; }
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
