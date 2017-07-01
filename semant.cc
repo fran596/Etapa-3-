@@ -255,6 +255,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0), error_stream(cerr)
 
         //cout<<"Class Main is not defined."<<endl;
 	cout<<"ERROR: Clase Main no definida"<<endl;
+	cout<< "ERROR: No hay metodo main en Main"<< endl;
 
     }
     clases_programa.insert(std::pair<std::string,std::string>("SELF_TYPE","Object"));
