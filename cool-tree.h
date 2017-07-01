@@ -392,8 +392,11 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
-   
-   void semantic();
+   Expression get_pred() { return pred; }
+   Expression get_then_exp() { return then_exp; }
+   Expression get_else_exp() { return else_exp; }
+
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -490,8 +493,13 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
+   Symbol get_identifier() { return identifier; }
+   Symbol get_type_decl() { return type_decl; }
+   Expression get_init() { return init; }
+   Expression get_body() { return body; }
+  
 
-   void semantic();
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
@@ -514,8 +522,9 @@ public:
    }
    Expression copy_Expression();
    void dump(ostream& stream, int n);
-
-   void semantic();
+   Expression get_e1() { return e1; }
+   Expression get_e2() { return e2; }
+   void semantic(std::map<Symbol,Symbol> &variables_clase);
 
 #ifdef Expression_SHARED_EXTRAS
    Expression_SHARED_EXTRAS
