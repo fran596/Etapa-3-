@@ -13,8 +13,8 @@
 #include <vector>
 
 #include <map>
+#include "typeinfo"
 
-#include <typeinfo> 
 
 
 
@@ -226,8 +226,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0), error_stream(cerr)
 
         {
 
-            //cout<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
-	      cout<<"ERROR: Clase " << clase->get_name() << " ya fue definida anteriormente"<<endl;
+            cout<<"Class "<<clase->get_name()<<" was previously defined."<<endl;
 
            // error();
 
@@ -253,8 +252,7 @@ ClassTable::ClassTable(Classes classes) : semant_errors(0), error_stream(cerr)
 
     {
 
-        //cout<<"Class Main is not defined."<<endl;
-	cout<<"ERROR: Clase Main no definida"<<endl;
+        cout<<"Class Main is not defined."<<endl;
 
     }
     clases_programa.insert(std::pair<std::string,std::string>("SELF_TYPE","Object"));
@@ -652,7 +650,7 @@ void ClassTable::revisar_ciclos()
 
                 {
 
-                    cout<<"ERROR: La clase "<<hijo<<" contiene una herencia ciclica"<<endl;
+                    cout<<"La clase "<<hijo<<" contiene una herencia ciclica"<<endl;
 
                    // exit(1);
 			break;
@@ -665,7 +663,7 @@ void ClassTable::revisar_ciclos()
 
             {
 
-                cout<<"ERROR: La clase "<<hijo<<" hereda de una clase desconocida"<<endl;
+                cout<<"La clase "<<hijo<<" hereda de una clase desconocida"<<endl;
 		break;
                // exit(1);
 
@@ -732,7 +730,6 @@ void ClassTable::revisar_features(Classes classes)
                     semant_error(clase->get_filename(), ((attr_class *)feat_aux))<< "cannot use \'self\' as the name of an attribute.\n" <<endl;
 
                 }
-		
 
             }
 
@@ -947,7 +944,7 @@ void ClassTable::error()
 
 void class__class::semantic(){
 	cout<<endl<<" Clase "<<name<<endl;
-	bool haymain = false;
+	
 	if(name== Main){
 		bool si_main= false;
 		Features features = get_features();
@@ -968,7 +965,7 @@ void class__class::semantic(){
             	    }
 		} 
 		if(!si_main){
-			cout<< "ERROR: No hay metodo main en Main"<< endl;
+			cout<< "No hay metodo main en Main"<< endl;
 		}	
 	
 	}
@@ -987,7 +984,8 @@ void class__class::semantic(){
 
                 //cout<<((attr_class *)feat_aux)->get_name() <<endl;
 
-                ((attr_class *)feat_aux)->semantic(variables_clase);
+		cout<<" typeid: "<< typeid(*((attr_class *)feat_aux)->get_expression()).name()<<endl;
+                ((attr_class *)feat_aux)->semantic();
 
             }
 
@@ -1002,53 +1000,29 @@ void class__class::semantic(){
                 method_class* m1 = (method_class *)feat_aux;
 
                 //std::string method_1 = m1->get_return_type()->get_string();
-
-                ((method_class *)feat_aux)->semantic(variables_clase);
+		cout<<" typeid: "<< typeid(*((method_class *)feat_aux)->get_expression()).name()<<endl;
+		Expression expr= ((method_class *)feat_aux)->get_expression();
+		(block_class *)expr->semantic();
+                ((method_class *)feat_aux)->semantic();
 
             }
-	}
-	/*cout<<"ANTES DE BORRAR"<<endl;
-	std::map<Symbol,Symbol>::iterator it;
-	it = variables_clase.begin();
-	while(it != variables_clase.end())
-	{
-		cout<<it->first<<" = " << it->second<<endl;
-		++it;
-	}*/
-	variables_clase.clear(); 
-        //cout<<"BORRO VARIABLES"<<endl;
+	}   
 	
 }
 
-void method_class::semantic(std::map<Symbol,Symbol> &variables_clase){
+void method_class::semantic(){
 	cout<<endl<<"Metodo: "<<name<<endl;
-       Formals formals = get_formals();
-       for(int i =formals->first(); formals->more(i); i=formals->next(i)) 
-       {
-		Formal fm = (Formal) formals->nth(i);
-		((formal_class *)fm)->semantic(variables_clase);
-
-       }
-       Expression xpr = get_expression();
-		if (typeid(*xpr) == typeid(block_class))
-		{
-			//cout<<"antes de meterme a block"<<endl;
-			((block_class *)xpr)->semantic(variables_clase);
-			//xpr->semantic();
-		}
 	
-
+	
 }
 
-void attr_class::semantic(std::map<Symbol,Symbol> &variables_clase){
+void attr_class::semantic(){
 	cout<<endl<<"Atributo: "<<name<<", Tipo: "<<type_decl<<endl;
-	variables_clase.insert ( std::pair<Symbol,Symbol>(name,type_decl) );
 	
 	if(type_decl != Int && type_decl != Bool && type_decl != Str){
 		cout<< "El tipo de atributo "<< type_decl<< " no existe"<<endl;
 		//exit(1);	
 	}
-      
  	//if(type_decl != get_init()->get_type()){
 	//	//cout<< "No son del mismo tipo: "<< type_decl<<" y "<< get_init()->get_type()<<endl;
 	//	cout<<"NO son del mismo tipo"<<endl;
@@ -1058,17 +1032,7 @@ void attr_class::semantic(std::map<Symbol,Symbol> &variables_clase){
 	//}
 }
 
-void formal_class::semantic(std::map<Symbol,Symbol> &variables_clase){
-//cout<<"estoy en formal"<<endl;
-//std::map<Symbol,Symbol>::iterator it;
-//it = variables_clase.find(name);
-//if(it == variables_clase.end())
-//{
-variables_clase.insert ( std::pair<Symbol,Symbol>(name,type_decl) );
-//}
-//else{
-//cout<<"ERROR: La variable " << name << " ya se encuentra definida anteriormente"<<endl;
-//}
+void formal_class::semantic(){
 
 }
 
@@ -1076,38 +1040,7 @@ void branch_class::semantic(){
 
 }
 
-void assign_class::semantic(std::map<Symbol,Symbol> &variables_clase){
-//cout<<"estoy en assign"<<endl;
-//cout<<"Nombre = "<< get_name() <<endl;
-std::map<Symbol,Symbol>::iterator it;
-it = variables_clase.find(get_name());
-if(it != variables_clase.end())
-{
-	Expression xpr = get_expression();
-	if(typeid(*xpr) == typeid(object_class))
-	{
-		//cout<<"es object_class"<<endl;
-	        ((object_class *)xpr)->semantic(variables_clase);
-	
-		std::map<Symbol,Symbol>::iterator it1;
-		std::map<Symbol,Symbol>::iterator it2;
-		it1 = variables_clase.find(name);
-		it2 = variables_clase.find(((object_class *)xpr)->get_name());
-		Symbol t1 = it1->second;
-		Symbol t2 = it2->second;
-		if(t1 != t2 )
-		{
-		cout<<"ERROR: No se puede asignar una variable tipo "<< it1->second<< " a una " << it2->second<<endl;
-		}
-	}
-	else if(typeid(*xpr) == typeid(plus_class))
-	{
-		((plus_class *)xpr)->semantic(variables_clase);
-	}
-}
-else {
-	cout<<"ERROR: Variable " << get_name() <<" fuera de alcance"<<endl;
-}
+void assign_class::semantic(){
 
 }
 
@@ -1119,31 +1052,7 @@ void dispatch_class::semantic(){
 
 }
 
-void cond_class::semantic(std::map<Symbol,Symbol> &variables_clase){
-//cout<<"dentro de cond"<<endl;
-if(typeid(*get_pred()) == typeid(object_class))
-{
-	std::map<Symbol,Symbol>::iterator it;
-	it = variables_clase.find(((object_class *)get_pred())->get_name());
-	if(it != variables_clase.end())
-	{
-		if(it->second != Bool)
-		{
-			cout<<"ERROR: Condicion de if no es booleana"<<endl;
-		}
-	}
-}
-	
-if(typeid(*get_then_exp()) == typeid(block_class))
-{
-	((block_class *)get_then_exp())->semantic(variables_clase);
-}
-
-if(typeid(*get_else_exp()) == typeid(block_class))
-{
-	((block_class *)get_else_exp())->semantic(variables_clase);
-}
-
+void cond_class::semantic(){
 
 }
 
@@ -1155,63 +1064,15 @@ void typcase_class::semantic(){
 
 }
 
-void block_class::semantic(std::map<Symbol,Symbol> &variables_clase){
-	Expressions xpr = get_body();
-        for(int i =xpr->first(); xpr->more(i); i=xpr->next(i) )
-	{
-     		Expression_class* aux = (Expression_class*) body->nth(i); 
-                if(typeid(*aux) == typeid(assign_class))
-		{
-			((assign_class *) aux)->semantic(variables_clase);
-		}
-		else if(typeid(*aux) == typeid(cond_class))
-		{
-			((cond_class *) aux)->semantic(variables_clase);
-		}
-		else if(typeid(*aux) == typeid(let_class))
-		{
-			((let_class *) aux)->semantic(variables_clase);
-		}
-   	}
+void block_class::semantic(){
+		cout<<endl<<"estoy en body: "<<endl;
+}
+
+void let_class::semantic(){
 
 }
 
-void let_class::semantic(std::map<Symbol,Symbol> &variables_clase){
-//cout<<"LET CLASS"<<endl;
-cout<<"Variable: "<<get_identifier()<< ", Tipo: "<< get_type_decl() <<endl;
-variables_clase.insert ( std::pair<Symbol,Symbol>(get_identifier(),get_type_decl()) );
-std::map<Symbol,Symbol>::iterator it;
-//cout<<"Tipo body = "<< typeid(*get_body()).name()<<endl;
-if(typeid(*get_body()) == typeid(let_class))
-{
-	((let_class *) get_body())->semantic(variables_clase);
-}
-else if(typeid(*get_body()) == typeid(assign_class))
-{
-	((assign_class *) get_body())->semantic(variables_clase);
-}
-//cout<<"Tipo init = "<< typeid(*get_init()).name()<<endl;
-if(typeid(*get_init()) == typeid(assign_class))
-{
-	((assign_class *) get_body())->semantic(variables_clase);
-}
-it = variables_clase.find(get_identifier());
-variables_clase.erase(it);
-
-}
-
-void plus_class::semantic(std::map<Symbol,Symbol> &variables_clase){
-std::map<Symbol,Symbol>::iterator it1;
-std::map<Symbol,Symbol>::iterator it2;
-if(typeid(*get_e1()) == typeid(object_class) && typeid(*get_e2()) == typeid(object_class))
-{
-	it1= variables_clase.find(((assign_class *) get_e1())->get_name());
-	it2= variables_clase.find(((assign_class *) get_e2())->get_name());
-	if (it1->second != it2->second)
-	{
-		cout<<"ERROR: No se puede asignar una variable tipo "<< it1->second<< " a una " << it2->second<<endl;
-	}
-}
+void plus_class::semantic(){
 
 }
 
@@ -1271,7 +1132,38 @@ void no_expr_class::semantic(){
 
 }
 
-void object_class::semantic(std::map<Symbol,Symbol> &variables_clase){
-cout<<"Name = "<<get_name()<<endl; 
+void object_class::semantic(){
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
